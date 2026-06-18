@@ -7,17 +7,20 @@ import {
   PLATE_TYPES,
   DEFAULT_PLATE_TYPE_ID,
   TEXTURE_ROOT,
+  TEXTURE_FILES,
+  PLATE_MODEL_CONFIG,
+  PLATE_TEXT_3D_CONFIG,
   PLATE_FONT_CONFIG
 } from './plateConfig.js';
 
-const PLATE_WIDTH = 4.4;
-const PLATE_HEIGHT = 2.2;
-const PLATE_THICKNESS = 0.045;
-const PLATE_CORNER_RADIUS = 0.16;
-const PLATE_FACE_INSET = 0.1;
-const TEXT_GEOMETRY_CENTER_Y_OFFSET = 0.02;
-const TEXT_MESH_Y_OFFSET = 0.12;
-const TEXT_MESH_Z_OFFSET = 0.004;
+const PLATE_WIDTH = PLATE_MODEL_CONFIG.width;
+const PLATE_HEIGHT = PLATE_MODEL_CONFIG.height;
+const PLATE_THICKNESS = PLATE_MODEL_CONFIG.thickness;
+const PLATE_CORNER_RADIUS = PLATE_MODEL_CONFIG.cornerRadius;
+const PLATE_FACE_INSET = PLATE_MODEL_CONFIG.faceInset;
+const TEXT_GEOMETRY_CENTER_Y_OFFSET = PLATE_TEXT_3D_CONFIG.centerYOffset;
+const TEXT_MESH_Y_OFFSET = PLATE_TEXT_3D_CONFIG.meshYOffset;
+const TEXT_MESH_Z_OFFSET = PLATE_TEXT_3D_CONFIG.meshZOffset;
 
 /* ================================================================
    STATE
@@ -274,10 +277,19 @@ function loadTextureSafe(url, { color = false } = {}) {
   });
 }
 
+function getTexturePaths(typeDef) {
+  const folder = typeDef.folder ?? typeDef.textureFolder ?? typeDef.name;
+  const diffusePath = typeDef.diffuseTexturePath
+    ?? typeDef.texturePath
+    ?? `${TEXTURE_ROOT}/${folder}/${TEXTURE_FILES.diffuse}`;
+  const normalPath = typeDef.normalTexturePath
+    ?? typeDef.normalMapPath
+    ?? `${TEXTURE_ROOT}/${folder}/${TEXTURE_FILES.normal}`;
+  return { diffusePath, normalPath };
+}
+
 async function loadPlateTypeAssets(typeDef) {
-  const folder = `${TEXTURE_ROOT}/${typeDef.folder}`;
-  const diffusePath = `${folder}/texture.png`;
-  const normalPath = `${folder}/texture_n.png`;
+  const { diffusePath, normalPath } = getTexturePaths(typeDef);
 
   const [diffuseTexture, normalTexture] = await Promise.all([
     loadTextureSafe(diffusePath, { color: true }),
@@ -328,19 +340,19 @@ function build3DText() {
 
   const geometry = new TextGeometry(display, {
     font: loadedFont,
-    size: 0.62,
-    height: 0.03,
-    curveSegments: 8,
-    bevelEnabled: true,
-    bevelThickness: 0.004,
-    bevelSize: 0.003,
-    bevelSegments: 2
+    size: PLATE_TEXT_3D_CONFIG.size,
+    height: PLATE_TEXT_3D_CONFIG.height,
+    curveSegments: PLATE_TEXT_3D_CONFIG.curveSegments,
+    bevelEnabled: PLATE_TEXT_3D_CONFIG.bevelEnabled,
+    bevelThickness: PLATE_TEXT_3D_CONFIG.bevelThickness,
+    bevelSize: PLATE_TEXT_3D_CONFIG.bevelSize,
+    bevelSegments: PLATE_TEXT_3D_CONFIG.bevelSegments
   });
 
   geometry.computeBoundingBox();
   const bounds = geometry.boundingBox;
   const rawWidth = bounds.max.x - bounds.min.x;
-  const maxWidth = (PLATE_WIDTH - PLATE_FACE_INSET) * 0.72;
+  const maxWidth = (PLATE_WIDTH - PLATE_FACE_INSET) * PLATE_TEXT_3D_CONFIG.maxWidthRatio;
 
   if (rawWidth > maxWidth) {
     const scale = maxWidth / rawWidth;

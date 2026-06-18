@@ -45,6 +45,11 @@ To add a new style:
    - `texture_n.png` (normal map)
 3. Add a matching entry in `PLATE_TYPES` in `plateConfig.js`.
 
+You can also point a style directly at custom paths with optional keys:
+
+- `diffuseTexturePath`
+- `normalTexturePath`
+
 ## Custom Font Setup (3D Text)
 
 3D text uses a Three.js typeface JSON file loaded as a web asset (no OS font install required).
@@ -55,6 +60,11 @@ To add a new style:
    - `PLATE_FONT_CONFIG.customTypefaceUrl` in `plateConfig.js`
 
 If no custom typeface file is found, the app falls back to Three.js' bundled helvetiker typeface.
+
+`plateConfig.js` also contains:
+
+- `PLATE_MODEL_CONFIG` (plate dimensions/thickness/corner radius)
+- `PLATE_TEXT_3D_CONFIG` (extrusion, bevel, and placement defaults)
 
 ## Tech Stack
 
