@@ -17,9 +17,7 @@ const PLATE_WIDTH = PLATE_MODEL_CONFIG.width;
 const PLATE_HEIGHT = PLATE_MODEL_CONFIG.height;
 const PLATE_THICKNESS = PLATE_MODEL_CONFIG.thickness;
 const PLATE_CORNER_RADIUS_MIN = 0;
-const PLATE_CORNER_RADIUS_MAX = Math.min(PLATE_WIDTH, PLATE_HEIGHT, PLATE_THICKNESS) / 2;
-// RoundedBoxGeometry clamps radius to half of the smallest dimension.
-// For this thin plate, thickness is the limiter, so values above max look the same.
+const PLATE_CORNER_RADIUS_MAX = Math.min(PLATE_WIDTH, PLATE_HEIGHT) / 2;
 const PLATE_CORNER_RADIUS = THREE.MathUtils.clamp(
   PLATE_MODEL_CONFIG.cornerRadius,
   PLATE_CORNER_RADIUS_MIN,

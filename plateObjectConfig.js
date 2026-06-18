@@ -4,7 +4,7 @@ export const PLATE_MODEL_CONFIG = {
   thickness: 0.045,
   // Corner roundness value used by RoundedBoxGeometry.
   // Min: 0
-  // Max: min(width, height, thickness) / 2 (values above this are clamped)
+  // Max: min(width, height) / 2 (values above this are clamped)
   cornerRadius: 0.16,
   // Inset used for the front face plane dimensions.
   // Min: 0
