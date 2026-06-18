@@ -36,6 +36,7 @@ const PLATE_FACE_CORNER_RADIUS = THREE.MathUtils.clamp(
   0,
   Math.min(PLATE_FACE_WIDTH, PLATE_FACE_HEIGHT) / 2
 );
+const UV_MIN_DIMENSION = 1e-6;
 const TEXT_GEOMETRY_CENTER_Y_OFFSET = PLATE_TEXT_3D_CONFIG.centerYOffset;
 const TEXT_MESH_Y_OFFSET = PLATE_TEXT_3D_CONFIG.meshYOffset;
 const TEXT_MESH_Z_OFFSET = PLATE_TEXT_3D_CONFIG.meshZOffset;
@@ -148,8 +149,8 @@ function fitGeometryUvToBounds(geometry) {
   const bounds = geometry.boundingBox;
   if (!bounds) return;
 
-  const sizeX = Math.max(bounds.max.x - bounds.min.x, Number.EPSILON);
-  const sizeY = Math.max(bounds.max.y - bounds.min.y, Number.EPSILON);
+  const sizeX = Math.max(bounds.max.x - bounds.min.x, UV_MIN_DIMENSION);
+  const sizeY = Math.max(bounds.max.y - bounds.min.y, UV_MIN_DIMENSION);
   const positions = geometry.attributes.position;
   const uv = new Float32Array(positions.count * 2);
 
