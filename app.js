@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import {
@@ -144,14 +143,16 @@ function createRoundedRectShape(width, height, radius) {
   return shape;
 }
 
-const plateBodyGeo = new RoundedBoxGeometry(
-  PLATE_WIDTH,
-  PLATE_HEIGHT,
-  PLATE_THICKNESS,
-  5,
-  // RoundedBoxGeometry radius parameter: this controls corner roundness.
-  PLATE_CORNER_RADIUS
+const plateBodyGeo = new THREE.ExtrudeGeometry(
+  createRoundedRectShape(PLATE_WIDTH, PLATE_HEIGHT, PLATE_CORNER_RADIUS),
+  {
+    depth: PLATE_THICKNESS,
+    steps: 1,
+    curveSegments: 24,
+    bevelEnabled: false
+  }
 );
+plateBodyGeo.translate(0, 0, -PLATE_THICKNESS * 0.5);
 const plateBodyMat = new THREE.MeshStandardMaterial({
   color: 0xc7c9cf,
   metalness: 0.72,

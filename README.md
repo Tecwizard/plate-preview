@@ -66,7 +66,7 @@ If no custom typeface file is found, the app falls back to Three.js' bundled hel
 - `plateObjectConfig.js` → `PLATE_MODEL_CONFIG` (plate dimensions/thickness/corner radius)
 - `plateConfig.js` → `PLATE_TEXT_3D_CONFIG` (extrusion, bevel, and placement defaults)
 
-For 3D corner roundness specifically, adjust `PLATE_MODEL_CONFIG.cornerRadius` in `plateObjectConfig.js` (used for both the `RoundedBoxGeometry` body radius and the rounded front-face geometry in `app.js`).
+For 3D corner roundness specifically, adjust `PLATE_MODEL_CONFIG.cornerRadius` in `plateObjectConfig.js` (used for both the rounded 3D body shape and rounded front-face geometry in `app.js`).
 
 ## Tech Stack
 
