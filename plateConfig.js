@@ -33,8 +33,8 @@ export const PLATE_TYPES = [
     name: 'Standard',
     folder: 'Standard',
     // Optional overrides:
-    // diffuseTexturePath: './textures/Standard/texture.png',
-    // normalTexturePath: './textures/Standard/texture_n.png',
+    diffuseTexturePath: './textures/Standard/SA_1.png',
+    normalTexturePath: './textures/Standard/SA_1_N.png',
     // texture: 'SA_1.png',
     // normalMap: 'SA_1_N.png',
     textColor2D: '#141414',
@@ -45,8 +45,8 @@ export const PLATE_TYPES = [
     name: 'Vanity',
     folder: 'Vanity',
     // Optional overrides:
-    // diffuseTexturePath: './textures/Vanity/texture.png',
-    // normalTexturePath: './textures/Vanity/texture_n.png',
+    diffuseTexturePath: './textures/Vanity/SA_2.png',
+    normalTexturePath: './textures/Vanity/Normal.png',
     // texture: 'SA_2.png',
     // normalMap: 'Normal.png',
     textColor2D: '#f6f7fb',
@@ -57,6 +57,6 @@ export const PLATE_TYPES = [
 export const DEFAULT_PLATE_TYPE_ID = PLATE_TYPES[0].id;
 
 export const PLATE_FONT_CONFIG = {
-  customTypefaceUrl: './fonts/LicensePlate.ttf',
+  customTypefaceUrl: './fonts/License Plate_Regular.json',
   fallbackTypefaceUrl: 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json'
 };
