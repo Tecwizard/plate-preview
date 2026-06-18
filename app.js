@@ -8,10 +8,10 @@ import {
   DEFAULT_PLATE_TYPE_ID,
   TEXTURE_ROOT,
   TEXTURE_FILES,
-  PLATE_MODEL_CONFIG,
   PLATE_TEXT_3D_CONFIG,
   PLATE_FONT_CONFIG
 } from './plateConfig.js';
+import { PLATE_MODEL_CONFIG } from './plateObjectConfig.js';
 
 const PLATE_WIDTH = PLATE_MODEL_CONFIG.width;
 const PLATE_HEIGHT = PLATE_MODEL_CONFIG.height;

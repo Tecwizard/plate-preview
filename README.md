@@ -61,12 +61,12 @@ You can also point a style directly at custom paths with optional keys:
 
 If no custom typeface file is found, the app falls back to Three.js' bundled helvetiker typeface.
 
-`plateConfig.js` also contains:
+3D defaults are configured in:
 
-- `PLATE_MODEL_CONFIG` (plate dimensions/thickness/corner radius)
-- `PLATE_TEXT_3D_CONFIG` (extrusion, bevel, and placement defaults)
+- `plateObjectConfig.js` → `PLATE_MODEL_CONFIG` (plate dimensions/thickness/corner radius)
+- `plateConfig.js` → `PLATE_TEXT_3D_CONFIG` (extrusion, bevel, and placement defaults)
 
-For 3D corner roundness specifically, adjust `PLATE_MODEL_CONFIG.cornerRadius` in `plateConfig.js` (used as the `RoundedBoxGeometry` radius in `app.js`).
+For 3D corner roundness specifically, adjust `PLATE_MODEL_CONFIG.cornerRadius` in `plateObjectConfig.js` (used as the `RoundedBoxGeometry` radius in `app.js`).
 
 ## Tech Stack
 
