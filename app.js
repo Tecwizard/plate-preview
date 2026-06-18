@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import {
@@ -8,16 +7,36 @@ import {
   DEFAULT_PLATE_TYPE_ID,
   TEXTURE_ROOT,
   TEXTURE_FILES,
-  PLATE_MODEL_CONFIG,
   PLATE_TEXT_3D_CONFIG,
   PLATE_FONT_CONFIG
 } from './plateConfig.js';
+import { PLATE_MODEL_CONFIG } from './plateObjectConfig.js';
 
 const PLATE_WIDTH = PLATE_MODEL_CONFIG.width;
 const PLATE_HEIGHT = PLATE_MODEL_CONFIG.height;
 const PLATE_THICKNESS = PLATE_MODEL_CONFIG.thickness;
-const PLATE_CORNER_RADIUS = PLATE_MODEL_CONFIG.cornerRadius;
-const PLATE_FACE_INSET = PLATE_MODEL_CONFIG.faceInset;
+const PLATE_CORNER_RADIUS_MIN = 0;
+const PLATE_CORNER_RADIUS_MAX = Math.min(PLATE_WIDTH, PLATE_HEIGHT) / 2;
+const PLATE_CORNER_RADIUS = THREE.MathUtils.clamp(
+  PLATE_MODEL_CONFIG.cornerRadius,
+  PLATE_CORNER_RADIUS_MIN,
+  PLATE_CORNER_RADIUS_MAX
+);
+const PLATE_FACE_INSET_MIN = 0;
+const PLATE_FACE_INSET_MAX = Math.min(PLATE_WIDTH, PLATE_HEIGHT) - 0.001;
+const PLATE_FACE_INSET = THREE.MathUtils.clamp(
+  PLATE_MODEL_CONFIG.faceInset,
+  PLATE_FACE_INSET_MIN,
+  PLATE_FACE_INSET_MAX
+);
+const PLATE_FACE_WIDTH = PLATE_WIDTH - PLATE_FACE_INSET;
+const PLATE_FACE_HEIGHT = PLATE_HEIGHT - PLATE_FACE_INSET;
+const PLATE_FACE_CORNER_RADIUS = THREE.MathUtils.clamp(
+  PLATE_CORNER_RADIUS - (PLATE_FACE_INSET * 0.5),
+  0,
+  Math.min(PLATE_FACE_WIDTH, PLATE_FACE_HEIGHT) / 2
+);
+const UV_MIN_DIMENSION = 1e-6;
 const TEXT_GEOMETRY_CENTER_Y_OFFSET = PLATE_TEXT_3D_CONFIG.centerYOffset;
 const TEXT_MESH_Y_OFFSET = PLATE_TEXT_3D_CONFIG.meshYOffset;
 const TEXT_MESH_Z_OFFSET = PLATE_TEXT_3D_CONFIG.meshZOffset;
@@ -106,13 +125,55 @@ scene.add(rimLight);
 const plateGroup = new THREE.Group();
 scene.add(plateGroup);
 
-const plateBodyGeo = new RoundedBoxGeometry(
-  PLATE_WIDTH,
-  PLATE_HEIGHT,
-  PLATE_THICKNESS,
-  5,
-  PLATE_CORNER_RADIUS
+function createRoundedRectShape(width, height, radius) {
+  const halfW = width * 0.5;
+  const halfH = height * 0.5;
+  const r = Math.min(Math.max(radius, 0), halfW, halfH);
+  const shape = new THREE.Shape();
+
+  shape.moveTo(-halfW + r, -halfH);
+  shape.lineTo(halfW - r, -halfH);
+  shape.absarc(halfW - r, -halfH + r, r, -Math.PI / 2, 0);
+  shape.lineTo(halfW, halfH - r);
+  shape.absarc(halfW - r, halfH - r, r, 0, Math.PI / 2);
+  shape.lineTo(-halfW + r, halfH);
+  shape.absarc(-halfW + r, halfH - r, r, Math.PI / 2, Math.PI);
+  shape.lineTo(-halfW, -halfH + r);
+  shape.absarc(-halfW + r, -halfH + r, r, Math.PI, (Math.PI * 3) / 2);
+
+  return shape;
+}
+
+function fitGeometryUvToBounds(geometry) {
+  geometry.computeBoundingBox();
+  const bounds = geometry.boundingBox;
+  if (!bounds) return;
+
+  const sizeX = Math.max(bounds.max.x - bounds.min.x, UV_MIN_DIMENSION);
+  const sizeY = Math.max(bounds.max.y - bounds.min.y, UV_MIN_DIMENSION);
+  const positions = geometry.attributes.position;
+  const uv = new Float32Array(positions.count * 2);
+
+  for (let i = 0; i < positions.count; i += 1) {
+    const x = positions.getX(i);
+    const y = positions.getY(i);
+    uv[i * 2] = (x - bounds.min.x) / sizeX;
+    uv[i * 2 + 1] = (y - bounds.min.y) / sizeY;
+  }
+
+  geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+}
+
+const plateBodyGeo = new THREE.ExtrudeGeometry(
+  createRoundedRectShape(PLATE_WIDTH, PLATE_HEIGHT, PLATE_CORNER_RADIUS),
+  {
+    depth: PLATE_THICKNESS,
+    steps: 1,
+    curveSegments: 24,
+    bevelEnabled: false
+  }
 );
+plateBodyGeo.translate(0, 0, -PLATE_THICKNESS * 0.5);
 const plateBodyMat = new THREE.MeshStandardMaterial({
   color: 0xc7c9cf,
   metalness: 0.72,
@@ -122,10 +183,10 @@ const plateBodyMesh = new THREE.Mesh(plateBodyGeo, plateBodyMat);
 plateBodyMesh.castShadow = true;
 plateGroup.add(plateBodyMesh);
 
-const plateFaceGeo = new THREE.PlaneGeometry(
-  PLATE_WIDTH - PLATE_FACE_INSET,
-  PLATE_HEIGHT - PLATE_FACE_INSET
+const plateFaceGeo = new THREE.ShapeGeometry(
+  createRoundedRectShape(PLATE_FACE_WIDTH, PLATE_FACE_HEIGHT, PLATE_FACE_CORNER_RADIUS)
 );
+fitGeometryUvToBounds(plateFaceGeo);
 const plateFaceMat = new THREE.MeshStandardMaterial({
   color: 0xffffff,
   metalness: 0.28,
