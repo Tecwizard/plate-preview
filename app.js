@@ -16,8 +16,22 @@ import { PLATE_MODEL_CONFIG } from './plateObjectConfig.js';
 const PLATE_WIDTH = PLATE_MODEL_CONFIG.width;
 const PLATE_HEIGHT = PLATE_MODEL_CONFIG.height;
 const PLATE_THICKNESS = PLATE_MODEL_CONFIG.thickness;
-const PLATE_CORNER_RADIUS = PLATE_MODEL_CONFIG.cornerRadius;
-const PLATE_FACE_INSET = PLATE_MODEL_CONFIG.faceInset;
+const PLATE_CORNER_RADIUS_MIN = 0;
+const PLATE_CORNER_RADIUS_MAX = Math.min(PLATE_WIDTH, PLATE_HEIGHT, PLATE_THICKNESS) / 2;
+// RoundedBoxGeometry clamps radius to half of the smallest dimension.
+// For this thin plate, thickness is the limiter, so values above max look the same.
+const PLATE_CORNER_RADIUS = THREE.MathUtils.clamp(
+  PLATE_MODEL_CONFIG.cornerRadius,
+  PLATE_CORNER_RADIUS_MIN,
+  PLATE_CORNER_RADIUS_MAX
+);
+const PLATE_FACE_INSET_MIN = 0;
+const PLATE_FACE_INSET_MAX = Math.min(PLATE_WIDTH, PLATE_HEIGHT) - 0.001;
+const PLATE_FACE_INSET = THREE.MathUtils.clamp(
+  PLATE_MODEL_CONFIG.faceInset,
+  PLATE_FACE_INSET_MIN,
+  PLATE_FACE_INSET_MAX
+);
 const TEXT_GEOMETRY_CENTER_Y_OFFSET = PLATE_TEXT_3D_CONFIG.centerYOffset;
 const TEXT_MESH_Y_OFFSET = PLATE_TEXT_3D_CONFIG.meshYOffset;
 const TEXT_MESH_Z_OFFSET = PLATE_TEXT_3D_CONFIG.meshZOffset;
