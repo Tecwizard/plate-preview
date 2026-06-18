@@ -143,6 +143,26 @@ function createRoundedRectShape(width, height, radius) {
   return shape;
 }
 
+function fitGeometryUvToBounds(geometry) {
+  geometry.computeBoundingBox();
+  const bounds = geometry.boundingBox;
+  if (!bounds) return;
+
+  const sizeX = Math.max(bounds.max.x - bounds.min.x, Number.EPSILON);
+  const sizeY = Math.max(bounds.max.y - bounds.min.y, Number.EPSILON);
+  const positions = geometry.attributes.position;
+  const uv = new Float32Array(positions.count * 2);
+
+  for (let i = 0; i < positions.count; i += 1) {
+    const x = positions.getX(i);
+    const y = positions.getY(i);
+    uv[i * 2] = (x - bounds.min.x) / sizeX;
+    uv[i * 2 + 1] = (y - bounds.min.y) / sizeY;
+  }
+
+  geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+}
+
 const plateBodyGeo = new THREE.ExtrudeGeometry(
   createRoundedRectShape(PLATE_WIDTH, PLATE_HEIGHT, PLATE_CORNER_RADIUS),
   {
@@ -165,6 +185,7 @@ plateGroup.add(plateBodyMesh);
 const plateFaceGeo = new THREE.ShapeGeometry(
   createRoundedRectShape(PLATE_FACE_WIDTH, PLATE_FACE_HEIGHT, PLATE_FACE_CORNER_RADIUS)
 );
+fitGeometryUvToBounds(plateFaceGeo);
 const plateFaceMat = new THREE.MeshStandardMaterial({
   color: 0xffffff,
   metalness: 0.28,
