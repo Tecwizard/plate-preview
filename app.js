@@ -15,6 +15,9 @@ const PLATE_HEIGHT = 2.2;
 const PLATE_THICKNESS = 0.045;
 const PLATE_CORNER_RADIUS = 0.16;
 const PLATE_FACE_INSET = 0.1;
+const TEXT_GEOMETRY_CENTER_Y_OFFSET = 0.02;
+const TEXT_MESH_Y_OFFSET = 0.12;
+const TEXT_MESH_Z_OFFSET = 0.004;
 
 /* ================================================================
    STATE
@@ -348,7 +351,7 @@ function build3DText() {
   const centered = geometry.boundingBox;
   const centerX = (centered.min.x + centered.max.x) * 0.5;
   const centerY = (centered.min.y + centered.max.y) * 0.5;
-  geometry.translate(-centerX, -centerY - 0.02, 0);
+  geometry.translate(-centerX, -centerY - TEXT_GEOMETRY_CENTER_Y_OFFSET, 0);
 
   const material = new THREE.MeshStandardMaterial({
     color: new THREE.Color(plateType?.textColor3D || '#161616'),
@@ -359,7 +362,7 @@ function build3DText() {
   });
 
   textMesh = new THREE.Mesh(geometry, material);
-  textMesh.position.set(0, -0.12, PLATE_THICKNESS * 0.5 + 0.004);
+  textMesh.position.set(0, -TEXT_MESH_Y_OFFSET, PLATE_THICKNESS * 0.5 + TEXT_MESH_Z_OFFSET);
   textMesh.castShadow = true;
   textMesh.visible = is3D;
   plateGroup.add(textMesh);
