@@ -35,8 +35,8 @@ export const PLATE_TYPES = [
     // Optional overrides:
     // diffuseTexturePath: './textures/Standard/texture.png',
     // normalTexturePath: './textures/Standard/texture_n.png',
-    texture: 'SA_1.png',
-    normalMap: 'SA_1_N.png',
+    // texture: 'SA_1.png',
+    // normalMap: 'SA_1_N.png',
     textColor2D: '#141414',
     textColor3D: '#1a1a1a'
   },
@@ -44,8 +44,11 @@ export const PLATE_TYPES = [
     id: 'vanity',
     name: 'Vanity',
     folder: 'Vanity',
-    texture: 'SA_2.png',
-    normalMap: 'Normal.png',
+    // Optional overrides:
+    // diffuseTexturePath: './textures/Vanity/texture.png',
+    // normalTexturePath: './textures/Vanity/texture_n.png',
+    // texture: 'SA_2.png',
+    // normalMap: 'Normal.png',
     textColor2D: '#f6f7fb',
     textColor3D: '#f3f4f8'
   }
