@@ -30,6 +30,13 @@ const PLATE_FACE_INSET = THREE.MathUtils.clamp(
   PLATE_FACE_INSET_MIN,
   PLATE_FACE_INSET_MAX
 );
+const PLATE_FACE_WIDTH = PLATE_WIDTH - PLATE_FACE_INSET;
+const PLATE_FACE_HEIGHT = PLATE_HEIGHT - PLATE_FACE_INSET;
+const PLATE_FACE_CORNER_RADIUS = THREE.MathUtils.clamp(
+  PLATE_CORNER_RADIUS - (PLATE_FACE_INSET * 0.5),
+  0,
+  Math.min(PLATE_FACE_WIDTH, PLATE_FACE_HEIGHT) / 2
+);
 const TEXT_GEOMETRY_CENTER_Y_OFFSET = PLATE_TEXT_3D_CONFIG.centerYOffset;
 const TEXT_MESH_Y_OFFSET = PLATE_TEXT_3D_CONFIG.meshYOffset;
 const TEXT_MESH_Z_OFFSET = PLATE_TEXT_3D_CONFIG.meshZOffset;
@@ -118,6 +125,25 @@ scene.add(rimLight);
 const plateGroup = new THREE.Group();
 scene.add(plateGroup);
 
+function createRoundedRectShape(width, height, radius) {
+  const halfW = width * 0.5;
+  const halfH = height * 0.5;
+  const r = Math.min(Math.max(radius, 0), halfW, halfH);
+  const shape = new THREE.Shape();
+
+  shape.moveTo(-halfW + r, -halfH);
+  shape.lineTo(halfW - r, -halfH);
+  shape.absarc(halfW - r, -halfH + r, r, -Math.PI / 2, 0);
+  shape.lineTo(halfW, halfH - r);
+  shape.absarc(halfW - r, halfH - r, r, 0, Math.PI / 2);
+  shape.lineTo(-halfW + r, halfH);
+  shape.absarc(-halfW + r, halfH - r, r, Math.PI / 2, Math.PI);
+  shape.lineTo(-halfW, -halfH + r);
+  shape.absarc(-halfW + r, -halfH + r, r, Math.PI, (Math.PI * 3) / 2);
+
+  return shape;
+}
+
 const plateBodyGeo = new RoundedBoxGeometry(
   PLATE_WIDTH,
   PLATE_HEIGHT,
@@ -135,9 +161,8 @@ const plateBodyMesh = new THREE.Mesh(plateBodyGeo, plateBodyMat);
 plateBodyMesh.castShadow = true;
 plateGroup.add(plateBodyMesh);
 
-const plateFaceGeo = new THREE.PlaneGeometry(
-  PLATE_WIDTH - PLATE_FACE_INSET,
-  PLATE_HEIGHT - PLATE_FACE_INSET
+const plateFaceGeo = new THREE.ShapeGeometry(
+  createRoundedRectShape(PLATE_FACE_WIDTH, PLATE_FACE_HEIGHT, PLATE_FACE_CORNER_RADIUS)
 );
 const plateFaceMat = new THREE.MeshStandardMaterial({
   color: 0xffffff,
