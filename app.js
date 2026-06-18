@@ -111,6 +111,7 @@ const plateBodyGeo = new RoundedBoxGeometry(
   PLATE_HEIGHT,
   PLATE_THICKNESS,
   5,
+  // RoundedBoxGeometry radius parameter: this controls corner roundness.
   PLATE_CORNER_RADIUS
 );
 const plateBodyMat = new THREE.MeshStandardMaterial({
