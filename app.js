@@ -40,6 +40,17 @@ const UV_MIN_DIMENSION = 1e-6;
 const TEXT_GEOMETRY_CENTER_Y_OFFSET = PLATE_TEXT_3D_CONFIG.centerYOffset;
 const TEXT_MESH_Y_OFFSET = PLATE_TEXT_3D_CONFIG.meshYOffset;
 const TEXT_MESH_Z_OFFSET = PLATE_TEXT_3D_CONFIG.meshZOffset;
+const SURFACE_TEXTURE_ROOT = `${TEXTURE_ROOT}/surface`;
+const SURFACE_OVERLAY_OPACITY = 0.15;
+const SURFACE_BUMP_SCALE = 0.5;
+const PLATE_FACE_ENV_INTENSITY = 2.2;
+const SURFACE_TEXTURE_ALIASES = {
+  overlay: ['overlay', 'color', 'albedo', 'basecolor', 'diffuse', 'Metal032_2K-PNG_Color', 'Metal032'],
+  roughness: ['roughness', 'Metal032_2K-PNG_Roughness'],
+  metalness: ['metalness', 'metallic', 'Metal032_2K-PNG_Metalness'],
+  normal: ['normal', 'normalgl', 'Metal032_2K-PNG_NormalGL', 'normaldx', 'Metal032_2K-PNG_NormalDX'],
+  height: ['height', 'displacement', 'Metal032_2K-PNG_Displacement']
+};
 
 /* ================================================================
    STATE
@@ -50,6 +61,7 @@ let is3D = true;
 let loadedFont = null;
 let textMesh = null;
 let plateTypes = [];
+let surfaceMaterialMaps = null;
 
 /* ================================================================
    DOM REFERENCES
@@ -74,8 +86,7 @@ const previewEl = document.getElementById('preview-area');
    THREE.JS SCENE
    ================================================================ */
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0f0f17);
-scene.fog = new THREE.FogExp2(0x0f0f17, 0.12);
+scene.background = new THREE.Color(0x000000);
 
 const camera = new THREE.PerspectiveCamera(
   45,
@@ -88,9 +99,62 @@ camera.position.set(0, 0.5, 5.1);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(previewEl.clientWidth, previewEl.clientHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.5;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 threeMountEl.appendChild(renderer.domElement);
+
+function createSoftEnvironmentTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+
+  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  gradient.addColorStop(0, '#33435a');
+  gradient.addColorStop(0.52, '#1f2b3f');
+  gradient.addColorStop(1, '#0f141f');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const softKey = ctx.createRadialGradient(
+    canvas.width * 0.58,
+    canvas.height * 0.44,
+    canvas.width * 0.02,
+    canvas.width * 0.58,
+    canvas.height * 0.44,
+    canvas.width * 0.35
+  );
+  softKey.addColorStop(0, 'rgba(230, 236, 245, 0.28)');
+  softKey.addColorStop(1, 'rgba(230, 236, 245, 0)');
+  ctx.fillStyle = softKey;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const softFill = ctx.createRadialGradient(
+    canvas.width * 0.25,
+    canvas.height * 0.58,
+    canvas.width * 0.02,
+    canvas.width * 0.25,
+    canvas.height * 0.58,
+    canvas.width * 0.28
+  );
+  softFill.addColorStop(0, 'rgba(176, 198, 230, 0.16)');
+  softFill.addColorStop(1, 'rgba(176, 198, 230, 0)');
+  ctx.fillStyle = softFill;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const envTexture = new THREE.CanvasTexture(canvas);
+  envTexture.colorSpace = THREE.SRGBColorSpace;
+  envTexture.mapping = THREE.EquirectangularReflectionMapping;
+  return envTexture;
+}
+
+const pmremGenerator = new THREE.PMREMGenerator(renderer);
+const softEnvironmentTexture = createSoftEnvironmentTexture();
+scene.environment = pmremGenerator.fromEquirectangular(softEnvironmentTexture).texture;
+softEnvironmentTexture.dispose();
+pmremGenerator.dispose();
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -106,20 +170,20 @@ controls.addEventListener('start', () => {
   hint3dEl.style.opacity = '0';
 });
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+scene.add(new THREE.AmbientLight(0xffffff, 1.6));
 
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.3);
-dirLight.position.set(4, 6, 4);
+const dirLight = new THREE.DirectionalLight(0xffffff, 2.1);
+dirLight.position.set(4, 6, 6);
 dirLight.castShadow = true;
 dirLight.shadow.mapSize.set(1024, 1024);
 scene.add(dirLight);
 
-const fillLight = new THREE.DirectionalLight(0x8888ff, 0.3);
-fillLight.position.set(-4, -2, 2);
+const fillLight = new THREE.DirectionalLight(0xd9e8ff, 0.7);
+fillLight.position.set(-5, 1, 3);
 scene.add(fillLight);
 
-const rimLight = new THREE.DirectionalLight(0x6c63ff, 0.4);
-rimLight.position.set(0, 4, -5);
+const rimLight = new THREE.DirectionalLight(0xffffff, 0.75);
+rimLight.position.set(0, 3, -5);
 scene.add(rimLight);
 
 const plateGroup = new THREE.Group();
@@ -176,8 +240,9 @@ const plateBodyGeo = new THREE.ExtrudeGeometry(
 plateBodyGeo.translate(0, 0, -PLATE_THICKNESS * 0.5);
 const plateBodyMat = new THREE.MeshStandardMaterial({
   color: 0xc7c9cf,
-  metalness: 0.72,
-  roughness: 0.36
+  metalness: 0.9,
+  roughness: 0.22,
+  envMapIntensity: 1.1
 });
 const plateBodyMesh = new THREE.Mesh(plateBodyGeo, plateBodyMat);
 plateBodyMesh.castShadow = true;
@@ -187,29 +252,106 @@ const plateFaceGeo = new THREE.ShapeGeometry(
   createRoundedRectShape(PLATE_FACE_WIDTH, PLATE_FACE_HEIGHT, PLATE_FACE_CORNER_RADIUS)
 );
 fitGeometryUvToBounds(plateFaceGeo);
-const plateFaceMat = new THREE.MeshStandardMaterial({
+const plateFaceMat = new THREE.MeshPhysicalMaterial({
   color: 0xffffff,
-  metalness: 0.28,
-  roughness: 0.74
+  metalness: 0.84,
+  roughness: 0.08,
+  clearcoat: 1,
+  clearcoatRoughness: 0.06,
+  envMapIntensity: PLATE_FACE_ENV_INTENSITY
 });
 const plateFaceMesh = new THREE.Mesh(plateFaceGeo, plateFaceMat);
 plateFaceMesh.position.z = PLATE_THICKNESS * 0.5 + 0.001;
 plateGroup.add(plateFaceMesh);
 
-const floorGeo = new THREE.PlaneGeometry(30, 30);
-const floorMat = new THREE.MeshStandardMaterial({
-  color: 0x0a0a14,
-  metalness: 0.05,
-  roughness: 0.95
-});
-const floor = new THREE.Mesh(floorGeo, floorMat);
-floor.rotation.x = -Math.PI / 2;
-floor.position.y = -2;
-floor.receiveShadow = true;
-scene.add(floor);
-
 const textureLoader = new THREE.TextureLoader();
 const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+
+function createSurfaceOverlayTexture(baseTexture, overlayTexture, opacity = SURFACE_OVERLAY_OPACITY) {
+  const baseImage = baseTexture?.image;
+  const overlayImage = overlayTexture?.image;
+  if (!baseImage) return baseTexture;
+  if (!overlayImage) return baseTexture;
+
+  const w = baseImage.width || 1024;
+  const h = baseImage.height || 512;
+  const blendCanvas = document.createElement('canvas');
+  blendCanvas.width = w;
+  blendCanvas.height = h;
+  const blendCtx = blendCanvas.getContext('2d');
+
+  blendCtx.drawImage(baseImage, 0, 0, w, h);
+  blendCtx.globalAlpha = THREE.MathUtils.clamp(opacity, 0, 1);
+  blendCtx.globalCompositeOperation = 'soft-light';
+  blendCtx.drawImage(overlayImage, 0, 0, w, h);
+  blendCtx.globalCompositeOperation = 'screen';
+  blendCtx.globalAlpha = THREE.MathUtils.clamp(opacity * 0.4, 0, 1);
+  blendCtx.drawImage(overlayImage, 0, 0, w, h);
+  blendCtx.globalCompositeOperation = 'source-over';
+  blendCtx.globalAlpha = 1;
+
+  const blendedTexture = new THREE.CanvasTexture(blendCanvas);
+  blendedTexture.anisotropy = maxAnisotropy;
+  blendedTexture.wrapS = baseTexture.wrapS;
+  blendedTexture.wrapT = baseTexture.wrapT;
+  blendedTexture.colorSpace = THREE.SRGBColorSpace;
+  return blendedTexture;
+}
+
+function getSurfaceTextureAttemptPaths(kind) {
+  const extensions = ['png', 'jpg', 'jpeg', 'webp'];
+  const names = SURFACE_TEXTURE_ALIASES[kind] || [kind];
+  const attempts = [];
+
+  for (const name of names) {
+    for (const extension of extensions) {
+      attempts.push(`${SURFACE_TEXTURE_ROOT}/${name}.${extension}`);
+    }
+  }
+
+  return attempts;
+}
+
+async function loadSurfaceTextureVariants(kind, options) {
+  const attempts = getSurfaceTextureAttemptPaths(kind);
+
+  for (const path of attempts) {
+    const texture = await loadTextureSafe(path, options);
+    if (texture) {
+      return texture;
+    }
+  }
+
+  return null;
+}
+
+async function loadSurfaceMaterialMaps() {
+  const [overlayMap, roughnessMap, metalnessMap, normalMap, heightMap] = await Promise.all([
+    loadSurfaceTextureVariants('overlay', { color: true }),
+    loadSurfaceTextureVariants('roughness'),
+    loadSurfaceTextureVariants('metalness'),
+    loadSurfaceTextureVariants('normal'),
+    loadSurfaceTextureVariants('height')
+  ]);
+
+  if (!overlayMap && !roughnessMap && !metalnessMap && !normalMap && !heightMap) {
+    return null;
+  }
+
+  return {
+    overlayMap,
+    roughnessMap,
+    metalnessMap,
+    normalMap,
+    heightMap
+  };
+}
+
+plateFaceMat.roughness = 0.18;
+plateFaceMat.metalness = 0.82;
+plateFaceMat.envMapIntensity = PLATE_FACE_ENV_INTENSITY;
+plateFaceMat.clearcoat = 1;
+plateFaceMat.clearcoatRoughness = 0.06;
 
 /* ================================================================
    HELPERS
@@ -361,10 +503,14 @@ async function loadPlateTypeAssets(typeDef) {
   const fallbackTexture = new THREE.CanvasTexture(placeholderCanvas);
   fallbackTexture.colorSpace = THREE.SRGBColorSpace;
   fallbackTexture.anisotropy = maxAnisotropy;
+  const sourceDiffuseTexture = diffuseTexture || fallbackTexture;
+  const finalDiffuseTexture = surfaceMaterialMaps?.overlayMap
+    ? createSurfaceOverlayTexture(sourceDiffuseTexture, surfaceMaterialMaps.overlayMap)
+    : sourceDiffuseTexture;
 
   return {
     ...typeDef,
-    diffuseTexture: diffuseTexture || fallbackTexture,
+    diffuseTexture: finalDiffuseTexture,
     normalTexture,
     previewImage: imageFromTexture(diffuseTexture) || placeholderCanvas
   };
@@ -378,8 +524,17 @@ function applyPlateSurface() {
   const plateType = getCurrentPlateType();
   if (!plateType) return;
 
+  const plateNormalMap = plateType.normalTexture || null;
+  const surfaceNormalMap = surfaceMaterialMaps?.normalMap || null;
+
   plateFaceMat.map = plateType.diffuseTexture || null;
-  plateFaceMat.normalMap = plateType.normalTexture || null;
+  plateFaceMat.normalMap = plateNormalMap || surfaceNormalMap;
+  plateFaceMat.clearcoatNormalMap = plateNormalMap ? surfaceNormalMap : null;
+  plateFaceMat.clearcoatNormalScale.set(0.35, 0.35);
+  plateFaceMat.roughnessMap = surfaceMaterialMaps?.roughnessMap || null;
+  plateFaceMat.metalnessMap = surfaceMaterialMaps?.metalnessMap || null;
+  plateFaceMat.bumpMap = surfaceMaterialMaps?.heightMap || null;
+  plateFaceMat.bumpScale = surfaceMaterialMaps?.heightMap ? SURFACE_BUMP_SCALE : 0;
   plateFaceMat.needsUpdate = true;
 }
 
@@ -407,36 +562,45 @@ function build3DText() {
     bevelEnabled: PLATE_TEXT_3D_CONFIG.bevelEnabled,
     bevelThickness: PLATE_TEXT_3D_CONFIG.bevelThickness,
     bevelSize: PLATE_TEXT_3D_CONFIG.bevelSize,
+    bevelOffset: PLATE_TEXT_3D_CONFIG.bevelOffset || 0,
     bevelSegments: PLATE_TEXT_3D_CONFIG.bevelSegments
   });
 
   geometry.computeBoundingBox();
   const bounds = geometry.boundingBox;
-  const rawWidth = bounds.max.x - bounds.min.x;
-  const maxWidth = (PLATE_WIDTH - PLATE_FACE_INSET) * PLATE_TEXT_3D_CONFIG.maxWidthRatio;
-
-  if (rawWidth > maxWidth) {
-    const scale = maxWidth / rawWidth;
-    geometry.scale(scale, scale, 1);
-    geometry.computeBoundingBox();
-  }
 
   const centered = geometry.boundingBox;
   const centerX = (centered.min.x + centered.max.x) * 0.5;
   const centerY = (centered.min.y + centered.max.y) * 0.5;
   geometry.translate(-centerX, -centerY - TEXT_GEOMETRY_CENTER_Y_OFFSET, 0);
 
-  const material = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(plateType?.textColor3D || '#161616'),
-    metalness: 0.2,
-    roughness: 0.6,
+  const textColor = new THREE.Color(plateType?.textColor3D || '#161616');
+  const material = new THREE.MeshPhysicalMaterial({
+    color: textColor,
+    metalness: 0.25,
+    roughness: 0.28,
+    clearcoat: 0.35,
+    clearcoatRoughness: 0.2,
+    envMapIntensity: 1.2,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1,
     transparent: isPlaceholder,
     opacity: isPlaceholder ? 0.45 : 1
   });
 
+  // Keep text shading clean so embossed bevel highlights remain readable.
+  material.normalMap = null;
+  material.bumpMap = null;
+  material.roughnessMap = null;
+  material.metalnessMap = null;
+  material.map = null;
+
   textMesh = new THREE.Mesh(geometry, material);
-  textMesh.position.set(0, -TEXT_MESH_Y_OFFSET, PLATE_THICKNESS * 0.5 + TEXT_MESH_Z_OFFSET);
-  textMesh.castShadow = true;
+  // Allow slight negative offsets so text can sit into the plate surface.
+  const surfaceLift = TEXT_MESH_Z_OFFSET;
+  textMesh.position.set(0, -TEXT_MESH_Y_OFFSET, PLATE_THICKNESS * 0.5 + surfaceLift);
+  textMesh.castShadow = false;
   textMesh.visible = is3D;
   plateGroup.add(textMesh);
 }
@@ -569,6 +733,7 @@ function animate() {
    INIT
    ================================================================ */
 (async function init() {
+  surfaceMaterialMaps = await loadSurfaceMaterialMaps();
   plateTypes = await Promise.all(PLATE_TYPES.map(loadPlateTypeAssets));
 
   if (!plateTypes.some((plateType) => plateType.id === currentPlateId) && plateTypes.length > 0) {
