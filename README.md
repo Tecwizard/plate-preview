@@ -41,14 +41,14 @@ To add a new style:
 
 1. Create a folder under `textures/` (for example `textures/Custom/`).
 2. Add:
-   - `texture.png` (diffuse/base map)
-   - `texture_n.png` (normal map)
+   - `texture.png` (2D diffuse/base map)
+   - `texture_3D.png` (3D diffuse/base map)
 3. Add a matching entry in `PLATE_TYPES` in `plateConfig.js`.
 
 You can also point a style directly at custom paths with optional keys:
 
-- `diffuseTexturePath`
-- `normalTexturePath`
+- `diffuseTexturePath2D`
+- `diffuseTexturePath3D`
 
 ## Custom Font Setup (3D Text)
 
@@ -67,6 +67,47 @@ If no custom typeface file is found, the app falls back to Three.js' bundled hel
 - `plateConfig.js` → `PLATE_TEXT_3D_CONFIG` (extrusion, bevel, and placement defaults)
 
 For 3D corner roundness specifically, adjust `PLATE_MODEL_CONFIG.cornerRadius` in `plateObjectConfig.js` (used for both the rounded 3D body shape and rounded front-face geometry in `app.js`).
+
+## GLB Plate Model Configuration
+
+To use a custom model, place your file at `textures/plate.glb` or set a custom path in `plateObjectConfig.js`:
+
+```js
+model: {
+   url: './textures/plate.glb',
+   faceMaterialName: 'FrontFace',
+   faceMeshName: 'PlateFrontMesh',
+   textureTransform: {
+     repeat: { x: 1, y: 1 },
+     offset: { x: 0, y: 0 },
+     center: { x: 0.5, y: 0.5 },
+     rotation: 0,
+     flipY: false
+   },
+   position: { x: 0, y: 0, z: 0 },
+   rotation: { x: 0, y: 0, z: 0 },
+   scale: { x: 1, y: 1, z: 1 }
+}
+```
+
+Notes:
+
+- `faceMaterialName` is optional. If set, the renderer applies plate textures to that exact material name.
+- `faceMeshName` is optional. If set, the renderer targets that exact mesh before applying material selection.
+- If omitted, the app auto-detects a face-like material (`front`, `face`, `plate`) and falls back to the first material.
+- `textureTransform` lets you nudge/scale/rotate the 3D diffuse texture directly in UV space when exported UVs need adjustment.
+- Model transforms are applied before bounding/placement calculations.
+
+## Troubleshooting GLB Loading
+
+If the model does not appear:
+
+1. Run from a local server, not `file://` URLs.
+2. Open browser devtools console and look for `[Plate Preview]` logs.
+3. Confirm the configured `model.url` exists and returns 200.
+4. Check logged material names, then set `faceMaterialName` explicitly.
+
+When loading fails, the app logs the exact error and falls back to procedural plate geometry.
 
 ## Tech Stack
 

@@ -358,7 +358,7 @@
         spellcheck="false"
         aria-label="License plate text"
       />
-      <p class="input-help">Letters A–Z, digits 0–9 and spaces only &nbsp;·&nbsp; max&nbsp;8&nbsp;characters</p>
+      <p class="input-help">Letters A–Z, digits 0–9 and spaces only.</p>
       <div class="char-count" id="char-count" aria-live="polite">0 / 8</div>
     </div>
 
@@ -372,10 +372,20 @@
       <div class="toggle-row">
         <div class="toggle-info">
           <div class="toggle-label" id="toggle-label">3D View</div>
-          <div class="toggle-sub" id="toggle-sub">Drag to rotate</div>
+          <div class="toggle-sub" id="toggle-sub">Drag to rotate, Scroll to zoom</div>
         </div>
-        <label class="switch" aria-label="Toggle 2D mode">
-          <input type="checkbox" id="view-toggle" />
+        <label class="switch" aria-label="Toggle 3D mode">
+          <input type="checkbox" id="view-toggle" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="toggle-row" id="format-bypass-row" style="margin-top: 0.6rem;">
+        <div class="toggle-info">
+          <div class="toggle-label">Vanity Plate Mode</div>
+          <div class="toggle-sub">Ignore mask and allow full 8 chars</div>
+        </div>
+        <label class="switch" aria-label="Toggle format bypass">
+          <input type="checkbox" id="format-bypass-toggle" />
           <span class="slider"></span>
         </label>
       </div>
